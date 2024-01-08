@@ -1,15 +1,14 @@
 import type { Knex } from "knex";
 
 export async function up(knex: Knex): Promise<void> {
-  return knex.schema.createTable("users", function (table) {
+  return knex.schema.createTable("users", (table)=> {
     table.uuid("id").primary();
     table.string("name").notNullable(); // Campo name, não pode ser nulo
-    table.string("email").notNullable().unique(); // Campo email, não pode ser nulo e deve ser único
+    table.string("email").notNullable(); // Campo email, não pode ser nulo
     table.string("password").notNullable(); // Campo password, não pode ser nulo
-    // Outros campos necessários podem ser adicionados aqui
-    // Exemplo: table.string('avatar_url');
+    table.uuid('session_id');
 
-    table.timestamps(true, true); // Adiciona campos created_at e updated_at automaticamente
+    table.timestamps(true, true); 
   });
 }
 
