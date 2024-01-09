@@ -5,7 +5,7 @@ import { knex } from "../database";
 import { randomUUID } from "crypto";
 
 export async function mealsRoutes(app: FastifyInstance) {
-  app.post("/", { preHandler: [checkSessionIdExists] }, async (req,replay) => {
+  app.post("/", { preHandler: [checkSessionIdExists] }, async (req, replay) => {
     const createMealBodySchema = z.object({
       name: z.string(),
       description: z.string(),
@@ -26,5 +26,44 @@ export async function mealsRoutes(app: FastifyInstance) {
     });
 
     return replay.status(201).send();
+  });
+
+  app.put("/:id", async (req, replay) => {
+    const createMealBodySchema = z.object({
+      name: z.string(),
+      description: z.string(),
+      isDiet: z.boolean(),
+    });
+
+    const queryParamsSchema = z.object({
+      id: z.string(),
+    });
+
+    let { name, description, isDiet } = createMealBodySchema.parse(req.body);
+    const { id } = queryParamsSchema.parse(req.query);
+
+    const mealsExist = await knex("meals").where({ id }).first();
+
+    if (!mealsExist) {
+      return replay
+        .status(422)
+        .send("problema com os dados enviados na solicitação");
+    }
+
+    await knex("meals")
+      .where("id", id)
+      .update({
+        name: name === "" ? mealsExist.name : name,
+        description: description === "" ? mealsExist.description : description,
+        is_diet: isDiet,
+      });
+
+    return replay
+      .status(200)
+      .send({
+        name: name === "" ? mealsExist.name : name,
+        description: description === "" ? mealsExist.description : description,
+        isDiet,
+      });
   });
 }
