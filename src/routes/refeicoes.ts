@@ -50,6 +50,15 @@ export async function mealsRoutes(app: FastifyInstance) {
         .send("problema com os dados enviados na solicitação");
     }
 
+    const { sessionId } = req.cookies;
+    const user = await knex("users").where("session_id", sessionId).first();
+
+    if(user.id !== mealsExist.user_id){
+      return replay
+        .status(422)
+        .send("Voce nao pode edita uma refeição que nao é sua");
+    }
+
     await knex("meals")
       .where("id", id)
       .update({
