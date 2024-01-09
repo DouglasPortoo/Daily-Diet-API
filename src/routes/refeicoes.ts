@@ -103,9 +103,7 @@ export async function mealsRoutes(app: FastifyInstance) {
     return replay.status(204).send();
   });
 
-
-
-  app.get("/:id", async (req,replay)=>{
+  app.get("/:id", async (req, replay) => {
     const queryParamsSchema = z.object({
       id: z.string(),
     });
@@ -129,22 +127,65 @@ export async function mealsRoutes(app: FastifyInstance) {
         .send("Voce nao pode edita uma refeição que nao é sua");
     }
 
-    return replay.status(200).send(mealsExist)
-
-  })
+    return replay.status(200).send(mealsExist);
+  });
 
   app.get("/all", async (req, replay) => {
     const { sessionId } = req.cookies;
     const user = await knex("users").where("session_id", sessionId).first();
 
     if (!user) {
-      return replay
-        .status(404)
-        .send("Usuario nao encontrado");
+      return replay.status(404).send("Usuario nao encontrado");
     }
 
-    const meals = await knex('meals').where({user_id  : user.id});
+    const meals = await knex("meals").where({ user_id: user.id });
 
     return replay.status(200).send(meals);
+  });
+
+  app.get("/metrics", async (req, replay) => {
+    const { sessionId } = req.cookies;
+    const user = await knex("users").where("session_id", sessionId).first();
+
+
+    const { total_refeicoes } = await knex("meals")
+      .count("* as total_refeicoes")
+      .where({ user_id: user.id })
+      .first();
+
+    const { refeicoes_dentro_dieta } = await knex("meals")
+      .count("* as refeicoes_dentro_dieta")
+      .where({ user_id: user.id, is_diet: true })
+      .first();
+
+    const { refeicoes_fora_dieta } = await knex("meals")
+      .count("* as refeicoes_fora_dieta")
+      .where({ user_id: user.id, is_diet: false })
+      .first();
+
+    const refeicoes = await knex("meals").where({ user_id: user.id });
+
+    let maxSequencia = 0;
+    let sequenciaAtual = 0;
+
+    for (const refeicao of refeicoes) {
+      if (refeicao.is_diet) {
+        sequenciaAtual++;
+        if (sequenciaAtual > maxSequencia) {
+          maxSequencia = sequenciaAtual;
+        }
+      } else {
+        sequenciaAtual = 0;
+      }
+    }
+
+    const result = {
+      totalRefeicoes: total_refeicoes,
+      refeicoesDentroDieta: refeicoes_dentro_dieta,
+      refeicoesForaDieta: refeicoes_fora_dieta,
+      melhorSequencia: maxSequencia,
+    };
+
+    return replay.status(200).send(result);
   });
 }
