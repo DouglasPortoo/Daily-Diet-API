@@ -37,7 +37,7 @@ export async function userRoutes(app: FastifyInstance) {
       return { name, email, password };
     } else {
       const newSessionId = (userExist.session_id = sessionId);
-      await knex("users").update("session_id", newSessionId);
+      await knex("users").where("id", userExist.id).update("session_id", newSessionId);
     }
   });
 }

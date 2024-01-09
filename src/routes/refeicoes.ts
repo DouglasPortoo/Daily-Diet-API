@@ -102,4 +102,19 @@ export async function mealsRoutes(app: FastifyInstance) {
 
     return replay.status(204).send();
   });
+
+  app.get("/", async (req, replay) => {
+    const { sessionId } = req.cookies;
+    const user = await knex("users").where("session_id", sessionId).first();
+
+    if (!user) {
+      return replay
+        .status(404)
+        .send("Usuario nao encontrado");
+    }
+
+    const meals = await knex('meals').where({user_id  : user.id});
+
+    return replay.status(200).send(meals);
+  });
 }
