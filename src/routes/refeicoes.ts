@@ -53,7 +53,7 @@ export async function mealsRoutes(app: FastifyInstance) {
     const { sessionId } = req.cookies;
     const user = await knex("users").where("session_id", sessionId).first();
 
-    if(user.id !== mealsExist.user_id){
+    if (user.id !== mealsExist.user_id) {
       return replay
         .status(422)
         .send("Voce nao pode edita uma refeição que nao é sua");
@@ -67,12 +67,39 @@ export async function mealsRoutes(app: FastifyInstance) {
         is_diet: isDiet,
       });
 
-    return replay
-      .status(200)
-      .send({
-        name: name === "" ? mealsExist.name : name,
-        description: description === "" ? mealsExist.description : description,
-        isDiet,
-      });
+    return replay.status(200).send({
+      name: name === "" ? mealsExist.name : name,
+      description: description === "" ? mealsExist.description : description,
+      isDiet,
+    });
+  });
+
+  app.delete("/:id", async (req, replay) => {
+    const queryParamsSchema = z.object({
+      id: z.string(),
+    });
+
+    const { id } = queryParamsSchema.parse(req.query);
+
+    const mealsExist = await knex("meals").where({ id }).first();
+
+    if (!mealsExist) {
+      return replay
+        .status(422)
+        .send("problema com os dados enviados na solicitação");
+    }
+
+    const { sessionId } = req.cookies;
+    const user = await knex("users").where("session_id", sessionId).first();
+
+    if (user.id !== mealsExist.user_id) {
+      return replay
+        .status(422)
+        .send("Voce nao pode edita uma refeição que nao é sua");
+    }
+
+    await knex("meals").where("id", id).del();
+
+    return replay.status(204).send();
   });
 }
