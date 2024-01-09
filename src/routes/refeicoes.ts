@@ -103,7 +103,37 @@ export async function mealsRoutes(app: FastifyInstance) {
     return replay.status(204).send();
   });
 
-  app.get("/", async (req, replay) => {
+
+
+  app.get("/:id", async (req,replay)=>{
+    const queryParamsSchema = z.object({
+      id: z.string(),
+    });
+
+    const { id } = queryParamsSchema.parse(req.query);
+
+    const mealsExist = await knex("meals").where({ id }).first();
+
+    if (!mealsExist) {
+      return replay
+        .status(422)
+        .send("problema com os dados enviados na solicitação");
+    }
+
+    const { sessionId } = req.cookies;
+    const user = await knex("users").where("session_id", sessionId).first();
+
+    if (user.id !== mealsExist.user_id) {
+      return replay
+        .status(422)
+        .send("Voce nao pode edita uma refeição que nao é sua");
+    }
+
+    return replay.status(200).send(mealsExist)
+
+  })
+
+  app.get("/all", async (req, replay) => {
     const { sessionId } = req.cookies;
     const user = await knex("users").where("session_id", sessionId).first();
 
